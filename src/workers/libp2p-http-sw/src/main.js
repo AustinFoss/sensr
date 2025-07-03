@@ -114,10 +114,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
 
-  // console.log("Fetch Event: ", event.request.url);
+  console.log("Fetch Event: ", event.request.url);
   
   if (
-    event.request.url === "https://eth-rpc.12d3koowajszv92pw8mebsav1sulicsoweruqb34gee5ydke4wm8.libp2p/"
+    event.request.url.endsWith(".libp2p/")
   ) {
     console.log('request matched');
 

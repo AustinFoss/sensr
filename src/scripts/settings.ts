@@ -50,6 +50,7 @@ const networks: NetworkConfig[] = [
             config: {
                 executionRpc: "https://eth-rpc." + remoteServer.remoteId + ".libp2p",
                 consensusRpc: 'https://ethereum.operationsolarstorm.org',
+                // consensusRpc: 'https://eth-consensus.' +remoteServer.remoteId + '.libp2p',
                 checkpoint:
                 // "0x573ce6fd80e33a11c0ba1d6e398109e043b804ddb6e12d26d8a00eff7ccf9e8f",
                 "0x0c4b712835ba0b33af8cac5904ba1450110163cfc4ea9b556e3e7d839e227afd",
