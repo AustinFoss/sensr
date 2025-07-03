@@ -14,7 +14,6 @@ See the [project description](/DESCRIPTION.md) for an in depth explanation for t
 
 ## Architecture
 
-
 ### Flow
 
 1. DOM Spawn
