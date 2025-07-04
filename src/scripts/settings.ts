@@ -1,5 +1,7 @@
 import type {Config, NetworkKind} from '@a16z/helios'
 
+export const envAddrs = import.meta.env.ADDR
+
 export type Libp2pConfig = {
     allowConnectionsFrom: string[],
     windowNode: {
@@ -39,8 +41,8 @@ export type RemoteServer = {
 
 
 const remoteServer: RemoteServer = {
-    remoteId: '12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8',
-    multiAddrStrs: ['/ip4/10.0.0.167/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g']
+    remoteId: '',
+    multiAddrStrs: []
 }
 
 const networks: NetworkConfig[] = [
@@ -48,9 +50,9 @@ const networks: NetworkConfig[] = [
         providerInfo: {    
             name: "ethereum",
             config: {
-                executionRpc: "https://eth-rpc." + remoteServer.remoteId + ".libp2p",
-                consensusRpc: 'https://ethereum.operationsolarstorm.org',
-                // consensusRpc: 'https://eth-consensus.' +remoteServer.remoteId + '.libp2p',
+                executionRpc: "https://eth-rpc.",
+                // consensusRpc: 'https://ethereum.operationsolarstorm.org',
+                consensusRpc: 'https://eth-consensus.',
                 checkpoint:
                 // "0x573ce6fd80e33a11c0ba1d6e398109e043b804ddb6e12d26d8a00eff7ccf9e8f",
                 "0x0c4b712835ba0b33af8cac5904ba1450110163cfc4ea9b556e3e7d839e227afd",

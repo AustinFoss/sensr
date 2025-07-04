@@ -1,3 +1,8 @@
+---
+const multiAddrStrs = import.meta.env.MULTIADDR_STRINGS
+const remoteId = import.meta.env.REMOTE_ID
+---
+
 <!-- Entry Point of the Web App -->
 
 <!doctype html>
@@ -7,20 +12,13 @@
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
+		<title>SENSR</title>
 		<script is:inline src="/sw-register.js" />
 		<link rel="manifest" href="manifest.json" />
+		<meta id="remoteId" name={remoteId}/>
+		<meta id="multiAddrStrs" name={multiAddrStrs}/>
 	</head>
 	<body>
 		<slot />
 	</body>
 </html>
-
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>

@@ -22,7 +22,6 @@ export class Eip1193 implements Startable, Eip1193Interface {
     this.components = components
     this.log = components.logger.forComponent('libp2p:ping')
     this.started = false
-    // this.protocol = `/${init.protocolPrefix ?? PROTOCOL_PREFIX}/${PROTOCOL_NAME}/${PROTOCOL_VERSION}`
     this.protocol = PROTOCOL_ID
     this.timeout = init.timeout ?? TIMEOUT
     this.maxInboundStreams = init.maxInboundStreams ?? MAX_INBOUND_STREAMS

@@ -34,6 +34,9 @@ const initWorker = async (options: any) => {
     
     workerState.networks[0].provider = await createHeliosProvider(workerState.networks[0].config, workerState.networks[0].kind)
 
+    console.log("Helios Provider Created");
+    
+
     await workerState.networks[0].provider.waitSynced();
 
     console.log('Helios is synced and ready!');

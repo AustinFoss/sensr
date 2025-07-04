@@ -14,12 +14,13 @@ See the [project description](/DESCRIPTION.md) for an in depth explanation for t
 
 1. Start a server that provides an Ethereum HTTP RPC service behind a LibP2P Node using the [LibP2P HTTP Protocol as defined in this spec](https://github.com/libp2p/specs/tree/master/http). This can be implemented in any number of ways. Since Go-LibP2P is the only one with an existing implementation I have created a server that performs this function at this repository, [Go SENSR Server]().
 
-1. Duplicate the `template.env` file to a new `.env` file. Copy the WebRTC Direct Multiaddress your server is listening on and enter it in the `BOOTSTRAP_ADDRS` field.
+1. Duplicate the `.env.tmp` file to a new `.env` file. Copy the WebRTC Direct Multiaddress your server is listening on and the peer ID over.
 
     ```env
-    BOOTSTRAP_ADDRS='[
-        "/ip4/10.0.0.167/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g/p2p/12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8"
+    MULTIADDR_STRINGS='[
+        "/ip4/10.0.0.167/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g"
     ]'
+    REMOTE_ID='12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8'
     ```
 
 1. Install dependencies & start the dev server. My `dev` script starts concurrent watches for both the Service Worker & Web Worker directories the bundles each and places the resulting files the public directory.
@@ -51,25 +52,3 @@ In order to provide an address that can remain constant for a reasonable length 
 Now that the Service Worker is connected to the remote server the Helios light client in the Webworker can begin its syncing process. Once it is synced messages can be sent to it from the main thread using libraries like ethers.js and viem (only ethers.js is currntly working) to send EIP-1193 JSON RPC request messages to the Helios Worker and return the response. This is done by wrapping the Helios Web Worker in a class that implements an EIP-1193 compatible interface.
 
 When Helios makes its HTTP requests the Fetch events are intercepted by the service worker and relays the request to the remote LibP2P server which then resolves the EIP-1193 request and propogates it back up the chain.
-
-## Architecture
-
-### Flow
-
-1. DOM Spawn
-1. Service Worker (SW) Initialize
-1. LibP2P WebRTC Node Spawn in DOM
-1. WebRTC -> Remote Server Req for Webtransport Address
-1. Remote Server WebTpt Addrs passed to Service Worker
-1. Service Worker Adds Remote Server Addrs to LibP2P Node & Connects
-    - Confirm Connection to the DOM
-1. Use the PeerId of the Remote Server to form the urls passed to the NetworkConfigs
-1. For each NetworkConfig generate a new WebWorkerProvider(HeliosWebWorker | new HeliosWebWorker(), Networks[ Network.Config ]) 
-
-## TODO List
-
-- [ ] Store a constant LibP2P Private Key in the browser IndexedDB 
-    - This may or may not be the same key used for both the Main Thread WebRTC LibP2P node and the Service Worker Webtransport LibP2P node; undecided
-- [ ] Build in Authorization for the Remote Server to only accept connections from specific PeerIDs
-- [ ] Build in Authorization for the WebRTC node in the browser to only accept connections from specific PeerIDs
-- [ ] Fix the HTTP relaying through the Remote Server

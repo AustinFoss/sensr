@@ -13,15 +13,10 @@ import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
 
 import {eip1193} from './protocol-eip1193'
 
-import type { BrowserProvider } from 'ethers';
 import type { WebWorkerProvider } from './eip1193-ww-client';
 
-const WEBRTC_CODE = protocols('webrtc').code
 const WEBTRANSPORT_CODE = protocols('webtransport').code
 
-const isWebrtc = (ma: Multiaddr) => {
-  return ma.protoCodes().includes(WEBRTC_CODE)
-}
 const isWebtransport = (ma: Multiaddr) => {
   return ma.protoCodes().includes(WEBTRANSPORT_CODE)
 }
@@ -73,10 +68,6 @@ export async function initLibp2p(options: {privKey: any, provider: WebWorkerProv
 
 export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
 
-        // _node.handle('/libp2p-http', async ({ connection, stream }) => {
-        //     console.log('Handling /libp2p-http');
-
-        // })
         _node.addEventListener('connection:open', (event) => {
             console.log("Connection Opened"); 
         })
@@ -94,26 +85,24 @@ export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
         })
 
         let addrs = []
-
         for(let addr in _addrs_list) {
             addrs.push(multiaddr(_addrs_list[addr]))
         }
-        // console.log("Bootstrap Addrs: ", addrs);
+        console.log("Bootstrap Addrs: ", addrs);
         
-
         console.log("Dialing bootstrap addrs");        
-        for(let addr in addrs) {
-            // console.log("Dialing peer: ", addrs[addr].getPeerId());
-            console.log("Bootstrap adddr: ", addrs[addr].toString());            
-            
+        for(let addr in addrs) {     
             // @ts-ignore
             await _node.dial(addrs[addr])
             // @ts-ignore
-            await _node.dialProtocol(addrs[addr], '/ipfs/ping/1.0.0')
+            let stream = await _node.dialProtocol(addrs[addr], '/ipfs/ping/1.0.0')
+            stream.close()
             // @ts-ignore
             await _node.dialProtocol(addrs[addr], '/ipfs/id/1.0.0')
+            stream.close()
             // @ts-ignore
             await _node.dialProtocol(addrs[addr], '/ipfs/id/1.0.0')
+            stream.close()
             
             let serverPeer;
             const peerIdStr = addrs[addr].getPeerId();
@@ -121,7 +110,6 @@ export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
             if (peerIdStr !== null) {
                 serverPeer = await _node.peerStore.get(peerIdFromString(peerIdStr));
             } else {
-                // Handle the null case (e.g., throw an error or skip)
                 throw new Error(`No PeerId found for address: ${addrs[addr]}`);
             }
 
@@ -135,26 +123,13 @@ export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
             // @ts-ignore
             serverPeer.addresses.filter(ma  => isWebtransport(ma.multiaddr))
                 .map((ma) => {
-                    // console.log("Webtransport Multiaddr: ");        
-                    // console.log(ma.multiaddr.toString());
                     const multiaddr = ma.multiaddr.toString() + "/p2p/" + serverPeer.id.toString()
                     webtransportAddrs.push(multiaddr)
                 
                 })
             console.log("Webtransport Multiaddrs: ", webtransportAddrs);
 
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then((registration) => {                    
-                    // Send message to service worker
-                    registration.active?.postMessage({
-                        type: 'ADD_WEBTRANSPORT_ADDRS',
-                        data: {
-                            peerId: serverPeer.id.toString(),
-                            peerData: webtransportAddrs
-                        }
-                    });
-                });
-            }
+            return webtransportAddrs
 
         }
     

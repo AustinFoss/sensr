@@ -2,103 +2,96 @@ import { createLibp2p } from 'libp2p';
 import { webTransport } from '@libp2p/webtransport';
 import { noise } from '@chainsafe/libp2p-noise';
 import { yamux } from '@chainsafe/libp2p-yamux';
-import { multiaddr, protocols } from '@multiformats/multiaddr';
+import { multiaddr } from '@multiformats/multiaddr';
 import { identify, identifyPush } from '@libp2p/identify'
 import { ping } from '@libp2p/ping';
 import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
 import {peerIdFromString} from "@libp2p/peer-id"
+import { privateKeyFromRaw } from '@libp2p/crypto/keys';
 
 import { dialLibp2pHttp } from './lib';
 
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 
-const WEBTRANSPORT_CODE = protocols('webtransport').code
 
 const remoteID = '12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8'
 const serverAddrStr ='/ip4/127.0.0.1/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g'
 
 const serverAddr = serverAddrStr + '/p2p/' + remoteID;
 
-const isWebtransport = (ma) => {
-  return ma.protoCodes().includes(WEBTRANSPORT_CODE)
-}
 
-const node = await createLibp2p({
-  addresses: {
-    listen: [
-      // "/p2p-circuit"
-    ]
-  },
-  transports: [
-    webTransport(),
-    circuitRelayTransport()
-  ],
-  connectionEncrypters: [noise()],
-  streamMuxers: [yamux()],
-  connectionGater: {
-    denyDialMultiaddr: () => {
-      return false
-    }
-  },
-  services: {
-    identify: identify(),
-    identifyPush: identifyPush(),
-    ping: ping()
-  }
-})
-await node.start()
-for(let addr in node.getMultiaddrs()) {
-  console.log("SW MultiAddr[s]", node.getMultiaddrs[addr]);
-}
+// TODO Investigate why this top level await is required to run sw script
+// I think it has something to do with the build script, and is also why Vite isn't working
+const started = async() => {}
+await started()
 
-self.addEventListener('message', async (event) => {
-  if (event.data && event.data.type === 'P2PHTTP') {
-    console.log("P2PHTTP: ", event.data);
-    let server = await node.peerStore.all()
-    const requestStr = 'GET /hello HTTP/1.1\r\n' +
-                    'Host: ' + event.data.host + '\r\n' +
-                    'Connection: close\r\n' +
-                    '\r\n';
-    dialLibp2pHttp(node, server[0].id, requestStr)
-  }
-})
-
-self.addEventListener('message', async (event) => {
+let node2 = undefined;
+const init = async (params) => {
+  console.log("Method Params: ", params);
+  let privKey = privateKeyFromRaw(params.privKey)
+  console.log("SW PrivKey: ", privKey);
   
-  if (event.data && event.data.type === 'ADD_WEBTRANSPORT_ADDRS') {
 
-    console.log("Bootstrapped PeerData: ", event.data.data.peerData);
-
-    await bootstrapNode(node, event.data.data.peerData)
-
-    let peerData = [];
-    
-    for(let ma in event.data.data.peerData) {    
-        peerData.push(multiaddr(event.data.data.peerData[ma]))
-    }        
-
-    try {        
-        node.peerStore.save(peerIdFromString(event.data.data.peerId.toString()), peerData)        
-        
-        await node.dial(event.data.data.peerData[0])
-
-    } catch (err) {
-        console.log(err);
-        
+  node2 = await createLibp2p({
+    privateKey: privKey,
+    addresses: {
+      listen: [
+        "/p2p-circuit"
+      ]
+    },
+    transports: [
+      webTransport(),
+      circuitRelayTransport()
+    ],
+    connectionEncrypters: [noise()],
+    streamMuxers: [yamux()],
+    connectionGater: {
+      denyDialMultiaddr: () => {
+        return false
+      }
+    },
+    services: {
+      identify: identify(),
+      identifyPush: identifyPush(),
+      ping: ping()
     }
-
+  })
+  await node2.start()
+  for(let addr in node2.getMultiaddrs()) {
+    console.log("SW MultiAddr[s]", node2.getMultiaddrs[addr]);
   }
-});
 
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'GET_PEER_ID') {
-    const peerId = node.peerId.toString();        
-    event.source.postMessage({
-      type: 'PEER_ID_RESPONSE',
-      peerId: peerId
-    });
-  }
+  console.log("Dialing bootstrap addr", params.bootstrapList[0]);
+
+  node2.dialProtocol(multiaddr(params.bootstrapList[0]), '/ipfs/ping/1.0.0')
+
+  return true
+  
+}
+
+self.addEventListener('message', async (event) => {
+
+  if(event.data && event.data.jsonrpc === '2.0') {
+    switch(event.data.method) {
+      case 'init':
+        let res = await init(event.data.params)
+        event.source.postMessage({
+          jsonrpc: '2.0',
+          result: res,
+          id: event.data.id
+        })
+        break;
+      case 'peerId':
+        event.source.postMessage({
+          jsonrpc: '2.0',
+          result: node2.peerId.toString(),
+          id: event.data.id,
+        })
+        break;
+    }
+    
+  } 
 });
 
 // Basic service worker lifecycle events
@@ -114,30 +107,31 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
 
-  console.log("Fetch Event: ", event.request.url);
+  // console.log("Fetch Event: ", event.request.url);
   
   if (
-    event.request.url.endsWith(".libp2p/")
+    // event.request.url === "https://eth-rpc.12d3koowajszv92pw8mebsav1sulicsoweruqb34gee5ydke4wm8.libp2p/"
+    event.request.url.match(/\.libp2p\/.*$/)
   ) {
-    console.log('request matched');
+    // console.log('request matched');
 
     event.respondWith((async () => {
       const request = event.request.clone();
 
       // Print details for debugging
-      console.log("Raw fetch request URL:", request.url);
+      // console.log("Raw fetch request URL:", request.url);
       for (const [key, value] of request.headers) {
-        console.log(`Raw Header: ${key}: ${value}`);
+        // console.log(`Raw Header: ${key}: ${value}`);
       }
-      console.log("Raw Method:", request.method);
+      // console.log("Raw Method:", request.method);
       if (request.method !== 'GET' && request.method !== 'HEAD') {
         const previewBody = await request.clone().text();
-        console.log("Raw Body:", previewBody);
+        // console.log("Raw Body:", previewBody);
       }
 
-      let host = await node.peerStore.all();
-      console.log("Libp2p Peer Host:", host[0]);
-      console.log("Cloned Request:", request);
+      let host = await node2.peerStore.all();
+      // console.log("Libp2p Peer Host:", host[0]);
+      // console.log("Cloned Request:", request);
 
       // Gather all headers exactly as provided by the browser
       let headers = '';
@@ -168,10 +162,10 @@ self.addEventListener('fetch', (event) => {
         '\r\n' +
         body;
 
-      console.log('Request string sent over libp2p:');
-      console.log(requestStr);
+      // console.log('Request string sent over libp2p:');
+      // console.log(requestStr);
 
-      let rawResponse = await dialLibp2pHttp(node, host[0].id, requestStr);
+      let rawResponse = await dialLibp2pHttp(node2, host[0].id, requestStr);
 
       // Parse the raw response
       const [statusLine, ...rest] = rawResponse.split('\r\n');
@@ -258,27 +252,7 @@ async function bootstrapNode(_node, _addrs_list) {
         }
 
         for(let addr in addrs) {
-            console.log("Dialing peer: ", addrs[addr].getPeerId());
-            
-            // await _node.dial(addrs[addr])
-            // setTimeout(()=>{}, 1000)
-            // await _node.dialProtocol(addrs[addr], '/ipfs/ping/1.0.0')
-            // _node.services.ping.ping(addrs[addr])
-            // await _node.dialProtocol(addrs[addr], '/ipfs/id/1.0.0')
             await _node.dialProtocol(addrs[addr], '/ipfs/id/1.0.0')
-            
-            // let serverPeer = await _node.peerStore.get(peerIdFromString(addrs[addr].getPeerId()))
-            // console.log(serverPeer);
-
-            // let webtransportAddrs = [];
-
-            // serverPeer.addresses.filter(ma => isWebtransport(ma.multiaddr))
-            //   .map((ma) => {
-            //       const multiaddr = ma.multiaddr.toString() + "/p2p/" + serverPeer.id.toString()
-            //       webtransportAddrs.push(multiaddr)
-              
-            //   })
-
         }
     
 }

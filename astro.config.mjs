@@ -3,17 +3,15 @@ import { defineConfig } from 'astro/config';
 import fs from 'fs';
 
 import solidJs from '@astrojs/solid-js';
+import tailwindcss from "@tailwindcss/vite";
 
 // https://astro.build/config
 export default defineConfig({
   integrations: [solidJs()],
   vite: {
-    server: {
-      // https: {
-      //   key: fs.readFileSync('./key.pem'),
-      //   cert: fs.readFileSync('./cert.pem'),
-      // },
-    },
+    plugins: [
+      tailwindcss()
+    ],
     build: {
       // Configure Rollup to handle the service worker file
       rollupOptions: {
