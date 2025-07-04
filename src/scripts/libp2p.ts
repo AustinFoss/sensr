@@ -146,20 +146,6 @@ export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
                 })
             console.log("Webtransport Multiaddrs: ", webtransportAddrs);
 
-
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then((registration) => {                    
-                    // Send message to service worker
-                    registration.active?.postMessage({
-                        type: 'ADD_WEBTRANSPORT_ADDRS',
-                        data: {
-                            peerId: serverPeer.id.toString(),
-                            peerData: webtransportAddrs
-                        }
-                    });
-                });
-            }
-
             return webtransportAddrs
 
         }

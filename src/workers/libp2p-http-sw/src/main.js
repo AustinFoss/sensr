@@ -2,85 +2,96 @@ import { createLibp2p } from 'libp2p';
 import { webTransport } from '@libp2p/webtransport';
 import { noise } from '@chainsafe/libp2p-noise';
 import { yamux } from '@chainsafe/libp2p-yamux';
-import { multiaddr, protocols } from '@multiformats/multiaddr';
+import { multiaddr } from '@multiformats/multiaddr';
 import { identify, identifyPush } from '@libp2p/identify'
 import { ping } from '@libp2p/ping';
 import { circuitRelayTransport } from '@libp2p/circuit-relay-v2'
 import {peerIdFromString} from "@libp2p/peer-id"
+import { privateKeyFromRaw } from '@libp2p/crypto/keys';
 
 import { dialLibp2pHttp } from './lib';
 
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 
+
 const remoteID = '12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8'
 const serverAddrStr ='/ip4/127.0.0.1/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g'
 
 const serverAddr = serverAddrStr + '/p2p/' + remoteID;
 
-const node = await createLibp2p({
-  addresses: {
-    listen: [
-      "/p2p-circuit"
-    ]
-  },
-  transports: [
-    webTransport(),
-    circuitRelayTransport()
-  ],
-  connectionEncrypters: [noise()],
-  streamMuxers: [yamux()],
-  connectionGater: {
-    denyDialMultiaddr: () => {
-      return false
+
+// TODO Investigate why this top level await is required to run sw script
+// I think it has something to do with the build script, and is also why Vite isn't working
+const started = async() => {}
+await started()
+
+let node2 = undefined;
+const init = async (params) => {
+  console.log("Method Params: ", params);
+  let privKey = privateKeyFromRaw(params.privKey)
+  console.log("SW PrivKey: ", privKey);
+  
+
+  node2 = await createLibp2p({
+    privateKey: privKey,
+    addresses: {
+      listen: [
+        "/p2p-circuit"
+      ]
+    },
+    transports: [
+      webTransport(),
+      circuitRelayTransport()
+    ],
+    connectionEncrypters: [noise()],
+    streamMuxers: [yamux()],
+    connectionGater: {
+      denyDialMultiaddr: () => {
+        return false
+      }
+    },
+    services: {
+      identify: identify(),
+      identifyPush: identifyPush(),
+      ping: ping()
     }
-  },
-  services: {
-    identify: identify(),
-    identifyPush: identifyPush(),
-    ping: ping()
+  })
+  await node2.start()
+  for(let addr in node2.getMultiaddrs()) {
+    console.log("SW MultiAddr[s]", node2.getMultiaddrs[addr]);
   }
-})
-await node.start()
-for(let addr in node.getMultiaddrs()) {
-  console.log("SW MultiAddr[s]", node.getMultiaddrs[addr]);
+
+  console.log("Dialing bootstrap addr", params.bootstrapList[0]);
+
+  node2.dialProtocol(multiaddr(params.bootstrapList[0]), '/ipfs/ping/1.0.0')
+
+  return true
+  
 }
 
 self.addEventListener('message', async (event) => {
-  
-  if (event.data && event.data.type === 'ADD_WEBTRANSPORT_ADDRS') {
 
-    console.log("Bootstrapped PeerData: ", event.data.data.peerData);
-
-    await bootstrapNode(node, event.data.data.peerData)
-
-    let peerData = [];
-    
-    for(let ma in event.data.data.peerData) {    
-        peerData.push(multiaddr(event.data.data.peerData[ma]))
-    }        
-
-    try {        
-        node.peerStore.save(peerIdFromString(event.data.data.peerId.toString()), peerData)        
-        
-        await node.dial(event.data.data.peerData[0])
-
-    } catch (err) {
-        console.log(err);
-        
+  if(event.data && event.data.jsonrpc === '2.0') {
+    switch(event.data.method) {
+      case 'init':
+        let res = await init(event.data.params)
+        event.source.postMessage({
+          jsonrpc: '2.0',
+          result: res,
+          id: event.data.id
+        })
+        break;
+      case 'peerId':
+        event.source.postMessage({
+          jsonrpc: '2.0',
+          result: node2.peerId.toString(),
+          id: event.data.id,
+        })
+        break;
     }
-
-  }
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'GET_PEER_ID') {
-    const peerId = node.peerId.toString();        
-    event.source.postMessage({
-      type: 'PEER_ID_RESPONSE',
-      peerId: peerId
-    });
-  }
+    
+  } 
 });
 
 // Basic service worker lifecycle events
@@ -118,7 +129,7 @@ self.addEventListener('fetch', (event) => {
         // console.log("Raw Body:", previewBody);
       }
 
-      let host = await node.peerStore.all();
+      let host = await node2.peerStore.all();
       // console.log("Libp2p Peer Host:", host[0]);
       // console.log("Cloned Request:", request);
 
@@ -154,7 +165,7 @@ self.addEventListener('fetch', (event) => {
       // console.log('Request string sent over libp2p:');
       // console.log(requestStr);
 
-      let rawResponse = await dialLibp2pHttp(node, host[0].id, requestStr);
+      let rawResponse = await dialLibp2pHttp(node2, host[0].id, requestStr);
 
       // Parse the raw response
       const [statusLine, ...rest] = rawResponse.split('\r\n');

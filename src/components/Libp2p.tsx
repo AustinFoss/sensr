@@ -81,9 +81,28 @@ function renderBlock(network: string, blockTime: number, block: any): void {
   el.classList.add("animate", "flash");
 }
 
-// TODO Pass pregenerated priv key from IndexedDB Settings 
+const swMessage = async (req: any) => {
+    return new Promise((resolve, reject) => {
+        const onMessage = (event: MessageEvent) => {            
+            if(event.data?.jsonrpc && event.data.id === req.id) {
+                navigator.serviceWorker.removeEventListener('message', onMessage);
+                clearTimeout(timeoutId);
+                resolve(event.data);
+            }
+        };
 
-serviceWorker?.postMessage({
+        navigator.serviceWorker.addEventListener('message', onMessage);
+
+        serviceWorker?.postMessage(req);
+
+        const timeoutId = setTimeout(() => {
+            navigator.serviceWorker.removeEventListener('message', onMessage);
+            reject(new Error("Response Timeout"));
+        }, 3000);
+    });
+};
+
+let res = await swMessage({
     jsonrpc: '2.0', 
     method: 'init',
     params: {
@@ -94,23 +113,14 @@ serviceWorker?.postMessage({
     id: 1    
 })
 
-// to service worker for consistant PeerId
-let serviceWorkerId: string;
-navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'PEER_ID_RESPONSE') {                    
-        serviceWorkerId = event.data.peerId
-    }    
-});
-serviceWorker?.postMessage({ type: 'GET_PEER_ID' })
-
-if ('serviceWorker' in navigator) {    
-    navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'SW_LOG') {
-            console.log("SW Log: ");            
-            console.log(event.data);
-        }   
-    });
-}
+let serviceWorkerId: any = await swMessage({
+    jsonrpc: '2.0',
+    method: 'peerId',
+    params: {},
+    id: 2
+// @ts-ignore
+})
+console.log("SW Init Success with PeerID: ", serviceWorkerId);
 
 
 // @ts-ignore
@@ -169,12 +179,8 @@ export default () => {
         <h2>Sovereign ENS Resolver</h2>
 
         <h3>My WebRTC LibP2P ID: {node?.peerId.toString()}</h3>
-        <h3>My SW LibP2P IP: {serviceWorkerId}</h3>
-
-        <button onclick={async () => {
-            let block = await webWorkerProvider.request({ method: 'eth_blockNumber', params: [] })
-            console.log(block);            
-        }}>BlockNumber?</button>
+        
+        <h3>My SW LibP2P IP: {serviceWorkerId.result}</h3>
 
         <div class="panels-container">
             <div class="panel">
