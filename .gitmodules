@@ -1,0 +1,3 @@
+[submodule "p2p-http-relay"]
+	path = p2p-http-relay
+	url = https://github.com/AustinFoss/p2p-http-relay.git
