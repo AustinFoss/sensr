@@ -109,11 +109,14 @@ export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
             // @ts-ignore
             await _node.dial(addrs[addr])
             // @ts-ignore
-            await _node.dialProtocol(addrs[addr], '/ipfs/ping/1.0.0')
+            let stream = await _node.dialProtocol(addrs[addr], '/ipfs/ping/1.0.0')
+            stream.close()
             // @ts-ignore
             await _node.dialProtocol(addrs[addr], '/ipfs/id/1.0.0')
+            stream.close()
             // @ts-ignore
             await _node.dialProtocol(addrs[addr], '/ipfs/id/1.0.0')
+            stream.close()
             
             let serverPeer;
             const peerIdStr = addrs[addr].getPeerId();
@@ -143,6 +146,7 @@ export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
                 })
             console.log("Webtransport Multiaddrs: ", webtransportAddrs);
 
+
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.ready.then((registration) => {                    
                     // Send message to service worker
@@ -155,6 +159,8 @@ export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
                     });
                 });
             }
+
+            return webtransportAddrs
 
         }
     

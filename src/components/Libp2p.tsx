@@ -16,11 +16,12 @@ import { useStore } from '@nanostores/solid';
 import { $counter, increase, $ensResAddr } from '../scripts/store';
 
 // Make sure the Service Worker is running
-const serviceWorker = await navigator.serviceWorker.ready
+let serviceWorkerReg = await navigator.serviceWorker.ready
+let serviceWorker = serviceWorkerReg.active
 
 let settings = new Settings
 await settings.init()
-console.log(settings.getAllSettings());
+// console.log(settings.getAllSettings());
 
 // @ts-ignore TODO: fix type checking later
 let privKey = privateKeyFromRaw(settings.getSetting("LibP2P").windowNode.privKey)
@@ -28,8 +29,30 @@ let privKey = privateKeyFromRaw(settings.getSetting("LibP2P").windowNode.privKey
 const serverAddr = settings.getSetting('Networking').remoteServers[0].multiAddrStrs[0] + '/p2p/' + settings.getSetting("Networking").remoteServers[0].remoteId;
 // @ts-ignore TODO: fix type checking later
 let ethProviderConf = settings.getSetting('Networking').networks[0]
-console.log("Eth Prov Conf: ", ethProviderConf);
+// console.log("Eth Prov Conf: ", ethProviderConf);
 
+let worker = new Worker('/workers/worker.js', {type: 'module'})
+// @ts-ignore TODO: fix type checking later
+const webWorkerProvider = new WebWorkerProvider({worker: worker})
+
+console.log("Starting bootstrap!!!!!!!!!!!");
+
+
+// Start the Webrtc Libp2p Node
+let node = await initLibp2p({privKey: privKey, provider: webWorkerProvider})
+console.log("Priv Key: ", privKey);
+
+let webtransportAddrs;
+if(node !== null && node !== undefined) {
+    node.start()
+    console.log(serverAddr);
+
+    webtransportAddrs = await bootstrapNode(node, [serverAddr])
+} else {
+    throw new Error("error initing libp2p")
+}
+
+console.log("LibP2P Bootstrapped!!!!!!!!!!!");
 
 function formatBlock(block: any): string {
   const ts = new Date(Number(block.timestamp) * 1000);
@@ -58,13 +81,27 @@ function renderBlock(network: string, blockTime: number, block: any): void {
   el.classList.add("animate", "flash");
 }
 
+// TODO Pass pregenerated priv key from IndexedDB Settings 
+
+serviceWorker?.postMessage({
+    jsonrpc: '2.0', 
+    method: 'init',
+    params: {
+        // @ts-ignore TODO: fix type checking later
+        privKey: settings.getSetting("LibP2P").swNode.privKey,
+        bootstrapList: webtransportAddrs
+    },
+    id: 1    
+})
+
+// to service worker for consistant PeerId
 let serviceWorkerId: string;
 navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'PEER_ID_RESPONSE') {                    
         serviceWorkerId = event.data.peerId
     }    
 });
-serviceWorker.active?.postMessage({ type: 'GET_PEER_ID' })
+serviceWorker?.postMessage({ type: 'GET_PEER_ID' })
 
 if ('serviceWorker' in navigator) {    
     navigator.serviceWorker.addEventListener('message', (event) => {
@@ -75,25 +112,10 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-let worker = new Worker('/workers/worker.js', {type: 'module'})
-// @ts-ignore TODO: fix type checking later
-const webWorkerProvider = new WebWorkerProvider({worker: worker, networks: [settings.getSetting('Networking').networks[0].providerInfo]})
 
+// @ts-ignore
+webWorkerProvider.init([settings.getSetting('Networking').networks[0].providerInfo])
 let ethClient = new BrowserProvider(webWorkerProvider)
-
-// Start the Webrtc Libp2p Node
-let node = await initLibp2p({privKey: privKey, provider: webWorkerProvider})
-console.log("Priv Key: ", privKey);
-
-if(node !== null && node !== undefined) {
-    node.start()
-    console.log(serverAddr);
-
-    await bootstrapNode(node, [serverAddr])
-} else {
-    throw new Error("error initing libp2p")
-}
-
 
 let libp2pProvider: BrowserProvider = new BrowserProvider(new LibP2pProvider({
     remote: multiaddr('/ip4/10.0.0.167/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g/p2p/12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8/p2p-circuit/webrtc/p2p/12D3KooWCNYZvrgCQdFFaSQYAHhnnM5rtBYVqbNh7vhqZ93Au4U8'),

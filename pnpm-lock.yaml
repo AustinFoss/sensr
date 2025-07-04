@@ -17,6 +17,9 @@ dependencies:
   '@chainsafe/libp2p-yamux':
     specifier: ^7.0.1
     version: 7.0.1
+  '@libp2p/bootstrap':
+    specifier: ^11.0.43
+    version: 11.0.43
   '@libp2p/circuit-relay-v2':
     specifier: ^3.2.12
     version: 3.2.12
@@ -83,6 +86,9 @@ dependencies:
   viem:
     specifier: ^2.31.4
     version: 2.31.4(typescript@5.8.2)(zod@3.24.2)
+  workbox-routing:
+    specifier: ^7.3.0
+    version: 7.3.0
 
 devDependencies:
   concurrently:
@@ -1121,6 +1127,17 @@ packages:
     resolution: {integrity: sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw==}
     dev: false
 
+  /@libp2p/bootstrap@11.0.43:
+    resolution: {integrity: sha512-/llOxAijjUExQ8Lex9Vp98+8O00PlS+2sK1TWqNFicnehXoZxtc8FoJiSH6dgQteCtksia+8GYUs/8wqInWszQ==}
+    dependencies:
+      '@libp2p/interface': 2.10.5
+      '@libp2p/interface-internal': 2.3.18
+      '@libp2p/peer-id': 5.1.8
+      '@multiformats/mafmt': 12.1.6
+      '@multiformats/multiaddr': 12.5.0
+      main-event: 1.0.1
+    dev: false
+
   /@libp2p/circuit-relay-v2@3.2.12:
     resolution: {integrity: sha512-ITu/iD/9/M6N5gA6stcbYDOvyR3VEtVNpiYaQARnswhUa47QQAXGjAsa0h73oLRmAzFoS0ju0YUF6mbs/oJ7vQ==}
     dependencies:
@@ -1583,6 +1600,12 @@ packages:
       p-queue: 8.1.0
       progress-events: 1.0.1
       uint8arrays: 5.1.0
+    dev: false
+
+  /@multiformats/mafmt@12.1.6:
+    resolution: {integrity: sha512-tlJRfL21X+AKn9b5i5VnaTD6bNttpSpcqwKVmDmSHLwxoz97fAHaepqFOk/l1fIu94nImIXneNbhsJx/RQNIww==}
+    dependencies:
+      '@multiformats/multiaddr': 12.5.0
     dev: false
 
   /@multiformats/multiaddr-matcher@1.7.0:
@@ -6507,6 +6530,16 @@ packages:
     engines: {node: '>=18'}
     dependencies:
       string-width: 7.2.0
+    dev: false
+
+  /workbox-core@7.3.0:
+    resolution: {integrity: sha512-Z+mYrErfh4t3zi7NVTvOuACB0A/jA3bgxUN3PwtAVHvfEsZxV9Iju580VEETug3zYJRc0Dmii/aixI/Uxj8fmw==}
+    dev: false
+
+  /workbox-routing@7.3.0:
+    resolution: {integrity: sha512-ZUlysUVn5ZUzMOmQN3bqu+gK98vNfgX/gSTZ127izJg/pMMy4LryAthnYtjuqcjkN4HEAx1mdgxNiKJMZQM76A==}
+    dependencies:
+      workbox-core: 7.3.0
     dev: false
 
   /wrap-ansi@7.0.0:

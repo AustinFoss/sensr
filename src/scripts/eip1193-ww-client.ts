@@ -18,7 +18,7 @@ export class WebWorkerProvider implements Eip1193Provider {
         worker: Worker,
         // TODO: Implement for multiple networks to be running
         // For now assume there is only networks[0]
-        networks?: NetworkConfig[]
+        // networks?: NetworkConfig[]
     }) {
         console.log(options);
         
@@ -27,14 +27,24 @@ export class WebWorkerProvider implements Eip1193Provider {
         this.webWorker.onerror = (error) => {
             console.error('Worker error:', error)
         }
+        // const workerMessage = {
+        //     type: 'init',
+        //     options: {
+        //         networks: options.networks
+        //     }
+        // }
+        // this.webWorker.postMessage(workerMessage)
+        
+    }
+
+    async init(networks: NetworkConfig[]) {
         const workerMessage = {
             type: 'init',
             options: {
-                networks: options.networks
+                networks: networks
             }
         }
-        this.webWorker.postMessage(workerMessage)
-        
+        this.webWorker.postMessage(workerMessage)        
     }
 
     async request(request: { method: string, params?: Array<any> | Record<string, any> }): Promise<any> {

@@ -15,6 +15,7 @@
     "@astrojs/solid-js": "^5.0.7",
     "@chainsafe/libp2p-noise": "^16.1.0",
     "@chainsafe/libp2p-yamux": "^7.0.1",
+    "@libp2p/bootstrap": "^11.0.43",
     "@libp2p/circuit-relay-v2": "^3.2.12",
     "@libp2p/crypto": "^5.1.6",
     "@libp2p/identify": "^3.0.28",
@@ -36,7 +37,8 @@
     "main-event": "^1.0.1",
     "nanostores": "^1.0.1",
     "solid-js": "^1.9.5",
-    "viem": "^2.31.4"
+    "viem": "^2.31.4",
+    "workbox-routing": "^7.3.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
