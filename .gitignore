@@ -24,4 +24,5 @@ pnpm-debug.log*
 .idea/
 
 public/sw.js
+public/sw.js.LICENSE.txt
 public/workers/worker.js
