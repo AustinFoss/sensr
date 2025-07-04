@@ -1,0 +1,24 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui";
+
+
+h1 {
+    @apply 
+        font-extrabold 
+        text-2xl
+    ;
+}
+
+h2 {
+    @apply
+        font-extrabold
+        text-lg
+    ;
+}
+
+h3 {
+    @apply
+        font-extrabold
+    ;
+}
