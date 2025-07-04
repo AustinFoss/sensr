@@ -3,10 +3,12 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "concurrently \"astro dev --host 0.0.0.0\" \"pnpm build:libp2p-http-sw\" \"pnpm build:helios-ww\"",
-    "build": "astro build",
-    "build:libp2p-http-sw": "cd src/workers/libp2p-http-sw/ && pnpm build -o ../../../public/ && while inotifywait -e close_write ./src/*; do pnpm build -o ../../../public/; done",
-    "build:helios-ww": "cd src/workers/helios-ww/ && pnpm build --outDir ../../../public/workers && while inotifywait -e close_write ./src/*; do pnpm build --outDir ../../../public/workers; done",
+    "dev": "concurrently \"astro dev --host 0.0.0.0\" \"pnpm watch:libp2p-http-sw\" \"pnpm watch:helios-ww\"",
+    "build": "pnpm build:libp2p-http-sw && pnpm build:helios-ww && astro build",
+    "build:libp2p-http-sw": "cd src/workers/libp2p-http-sw/ && pnpm build -o ../../../public/",
+    "watch:libp2p-http-sw": "cd src/workers/libp2p-http-sw/ && pnpm build -o ../../../public/ && while inotifywait -e close_write ./src/*; do pnpm build -o ../../../public/; done",
+    "build:helios-ww": "cd src/workers/helios-ww/ && pnpm build --outDir ../../../public/workers",
+    "watch:helios-ww": "cd src/workers/helios-ww/ && pnpm build --outDir ../../../public/workers && while inotifywait -e close_write ./src/*; do pnpm build --outDir ../../../public/workers; done",
     "preview": "astro preview",
     "astro": "astro"
   },

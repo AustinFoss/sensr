@@ -24,3 +24,4 @@ pnpm-debug.log*
 .idea/
 
 public/sw.js
+public/workers/worker.js
