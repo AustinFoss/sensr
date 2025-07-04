@@ -105,6 +105,8 @@ export function openDatabase(remoteServer?: {remoteId: string, multiAddrStrs: st
           
           request2.onsuccess = async () => {
             request2.result.value.remoteServers[0] = remoteServer
+            request2.result.value.networks[0].providerInfo.config.executionRpc = request2.result.value.networks[0].providerInfo.config.executionRpc + remoteServer?.remoteId + ".libp2p"
+            request2.result.value.networks[0].providerInfo.config.consensusRpc = request2.result.value.networks[0].providerInfo.config.consensusRpc + remoteServer?.remoteId + ".libp2p"
             store.put(request2.result)
           }
           

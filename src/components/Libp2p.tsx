@@ -13,7 +13,7 @@ import { LibP2pProvider } from '../scripts/protocol-eip1193';
 
 
 import { useStore } from '@nanostores/solid';
-import { $counter, increase, $ensResAddr } from '../scripts/store';
+import { $ensResAddr } from '../scripts/store';
 
 // Make sure the Service Worker is running
 let serviceWorkerReg = await navigator.serviceWorker.ready
@@ -153,8 +153,6 @@ setInterval(async () => {
 }, 1000);
 
 export default () => {
-
-    const count = useStore($counter);
     const ensResAddr = useStore($ensResAddr)
 
     let sting: any[] = [];
@@ -180,9 +178,9 @@ export default () => {
         <h1>SENSR</h1>
         <h2>Sovereign ENS Resolver</h2>
 
-        <h3>My WebRTC LibP2P ID: {node?.peerId.toString()}</h3>
+        <h3>Main Thread LibP2P ID: </h3><p>{node?.peerId.toString()}</p>
         
-        <h3>My SW LibP2P IP: {serviceWorkerId.result}</h3>
+        <h3>Service Worker LibP2P ID: </h3><p>{serviceWorkerId.result}</p>
 
         <div class="panels-container">
             <div class="panel">
@@ -201,7 +199,7 @@ export default () => {
         }}>Local ENS Query?</button>
         <p>{getLocalResolved()}</p>
 
-        <h3>Permit Connections From: </h3><input id='permitInput' type='text' onInput={() => {
+        {/* <h3>Permit Connections From: </h3><input id='permitInput' type='text' onInput={() => {
             let ele = document.getElementById('permitInput') as HTMLInputElement
             setPermitId(ele.value)            
         }} placeholder={getPermitId()} />
@@ -232,8 +230,8 @@ export default () => {
                     </ul>
                 </>
             }
-        }}
-
+        }} */}
+{/* 
         <h3>Resolve ENS: </h3>
         <input id='ensQuery' type="text" placeholder='.eth?' />
         <button onClick={async ()=>{
@@ -249,7 +247,7 @@ export default () => {
                         
         }}>?</button>
         <h3>Resolved: </h3>
-        <p>{ensResAddr()}</p>
+        <p>{ensResAddr()}</p> */}
 
     </>;
 
