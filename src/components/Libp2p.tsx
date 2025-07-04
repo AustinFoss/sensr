@@ -20,8 +20,10 @@ let serviceWorkerReg = await navigator.serviceWorker.ready
 let serviceWorker = serviceWorkerReg.active
 
 let settings = new Settings
-await settings.init()
-// console.log(settings.getAllSettings());
+let remoteId = document.getElementById('remoteId') as HTMLMetaElement
+let multiAddrStrs = document.getElementById('multiAddrStrs') as HTMLMetaElement
+
+await settings.init({remoteId: remoteId.name, multiAddrStrs: JSON.parse(multiAddrStrs.name)})
 
 // @ts-ignore TODO: fix type checking later
 let privKey = privateKeyFromRaw(settings.getSetting("LibP2P").windowNode.privKey)

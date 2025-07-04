@@ -1,3 +1,10 @@
+---
+console.log();
+const multiAddrStrs = import.meta.env.MULTIADDR_STRINGS
+const remoteId = import.meta.env.REMOTE_ID
+console.log(JSON.stringify({remoteId: remoteId, multiAddrStrs: multiAddrStrs}))
+---
+
 <!-- Entry Point of the Web App -->
 
 <!doctype html>
@@ -10,6 +17,8 @@
 		<title>Astro Basics</title>
 		<script is:inline src="/sw-register.js" />
 		<link rel="manifest" href="manifest.json" />
+		<meta id="remoteId" name={remoteId}/>
+		<meta id="multiAddrStrs" name={multiAddrStrs}/>
 	</head>
 	<body>
 		<slot />

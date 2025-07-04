@@ -1,5 +1,7 @@
 import type {Config, NetworkKind} from '@a16z/helios'
 
+export const envAddrs = import.meta.env.ADDR
+
 export type Libp2pConfig = {
     allowConnectionsFrom: string[],
     windowNode: {
@@ -39,8 +41,8 @@ export type RemoteServer = {
 
 
 const remoteServer: RemoteServer = {
-    remoteId: '12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8',
-    multiAddrStrs: ['/ip4/10.0.0.167/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g']
+    remoteId: '',
+    multiAddrStrs: []
 }
 
 const networks: NetworkConfig[] = [

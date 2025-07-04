@@ -94,13 +94,11 @@ export async function bootstrapNode(_node: Libp2p, _addrs_list: string[]) {
         })
 
         let addrs = []
-
         for(let addr in _addrs_list) {
             addrs.push(multiaddr(_addrs_list[addr]))
         }
-        // console.log("Bootstrap Addrs: ", addrs);
+        console.log("Bootstrap Addrs: ", addrs);
         
-
         console.log("Dialing bootstrap addrs");        
         for(let addr in addrs) {
             // console.log("Dialing peer: ", addrs[addr].getPeerId());

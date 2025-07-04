@@ -1,5 +1,5 @@
 import { generateKeyPair } from '@libp2p/crypto/keys'
-import {factory, type Libp2pConfig, type NetworkingConfig, type Setting} from './settings'
+import {factory, type Libp2pConfig, type NetworkingConfig, type Setting, envAddrs} from './settings'
 
 const DB_NAME = 'Sensr';
 const DB_VERSION = 1;
@@ -9,57 +9,60 @@ export class Settings {
 
     dbName: string;
     storeName: string;
-
     settings: Setting[];
 
     constructor() {
-        this.dbName = DB_NAME
-        this.storeName = STORE_NAME
-        this.settings = []
+      this.dbName = DB_NAME
+      this.storeName = STORE_NAME
+      this.settings = []
     }
 
-    public async init() {
-        let db = await openDatabase()
-        this.settings = await getAllSettings(db)
-        db.close()
-        return this.settings
+    public async init(remoteServer?: {remoteId: string, multiAddrStrs: string[]}) {
+      // console.log("Bootstrap Addr Env Settings: ", bootstrapAddrs);
+      
+      let db = await openDatabase(remoteServer)
+      this.settings = await getAllSettings(db)
+      db.close()
+      return this.settings
     }
 
     public getAllSettings(): Setting[] {
-        return this.settings
+
+      console.log("Env Addr: ", envAddrs);
+      return this.settings
     }
 
     public getSetting(settingName: string): Libp2pConfig | NetworkingConfig {
 
-        return this.settings.filter((setting) => setting.name === settingName)[0].value
+      return this.settings.filter((setting) => setting.name === settingName)[0].value
     }
 
     public async updateSetting(updatedSetting: Setting): Promise<Setting[]> {
 
-        let db = await openDatabase()
+      let db = await openDatabase()
 
-        let transaction = db.transaction(["Settings"], "readwrite")
-        const store = transaction.objectStore("Settings");
-        const index = store.index("name");
+      let transaction = db.transaction(["Settings"], "readwrite")
+      const store = transaction.objectStore("Settings");
+      const index = store.index("name");
 
-        const query = index.get(updatedSetting.name); // Query by name using the index
+      const query = index.get(updatedSetting.name); // Query by name using the index
 
-        query.onsuccess = () => {
-            query.result.value = updatedSetting.value
-            store.put(query.result)
-        }
+      query.onsuccess = () => {
+          query.result.value = updatedSetting.value
+          store.put(query.result)
+      }
 
-        db.close()
+      db.close()
 
-        this.init()
-        
-        return this.getAllSettings()
+      this.init()
+      
+      return this.getAllSettings()
     }
 
 }
 
 // Function to open or create IndexedDB
-export function openDatabase(): Promise<IDBDatabase> {
+export function openDatabase(remoteServer?: {remoteId: string, multiAddrStrs: string[]}): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     // Open database request
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -68,37 +71,43 @@ export function openDatabase(): Promise<IDBDatabase> {
     request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
       const db = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-            let store = db.createObjectStore(STORE_NAME, {
-            keyPath: 'index', // Primary key
-            autoIncrement: true // Auto-incrementing keys
-            });
-            store.createIndex("name", "name", { unique: true });     
+          let store = db.createObjectStore(STORE_NAME, {
+          keyPath: 'index', // Primary key
+          autoIncrement: true // Auto-incrementing keys
+          });
+          store.createIndex("name", "name", { unique: true });     
+          
+          // TODO: now set factory settings in the Settings Store
+          let defaultConfigs = factory.settings
+
+          for(let config in defaultConfigs) {
+              let cfg = defaultConfigs[config] 
+                  const addRequest = store.add(cfg);
+          }
+
+          const nameIndex = store.index("name");
+          const request1 = nameIndex.get("LibP2P");
+
+          request1.onsuccess = async () => {
+            console.log("Updating LibP2P settings with new Key Pairs");
             
-            // TODO: now set factory settings in the Settings Store
-            let defaultConfigs = factory.settings
+            let key 
+            key = await generateKeyPair("Ed25519")
+            request1.result.value.swNode.privKey = key.raw
+            key = await generateKeyPair("Ed25519")
+            request1.result.value.windowNode.privKey = key.raw
+            store.put(request1.result)
+        
+          }
 
-            for(let config in defaultConfigs) {
-                let cfg = defaultConfigs[config] 
-                    const addRequest = store.add(cfg);
-            }
-
-            const nameIndex = store.index("name");
-            const request = nameIndex.get("LibP2P");
-
-
-            request.onsuccess = async () => {
-                // Step 2: If found, return the value object
-                // resolve(request.result.value);
-                console.log("Updating LibP2P settings with new Key Pairs");
-                
-                let key 
-                key = await generateKeyPair("Ed25519")
-                request.result.value.swNode.privKey = key.raw
-                key = await generateKeyPair("Ed25519")
-                request.result.value.windowNode.privKey = key.raw
-                store.put(request.result)
-         
-            }
+          const request2 = nameIndex.get("Networking");
+          console.log("Remote server env: ", remoteServer);
+          
+          request2.onsuccess = async () => {
+            request2.result.value.remoteServers[0] = remoteServer
+            store.put(request2.result)
+          }
+          
 
         }        
     };
