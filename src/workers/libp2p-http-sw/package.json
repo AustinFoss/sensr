@@ -26,6 +26,8 @@
     "@libp2p/webtransport": "^5.0.46",
     "@multiformats/multiaddr": "^12.5.0",
     "libp2p": "^2.8.11",
-    "uuid": "^11.0.5"
+    "uuid": "^11.0.5",
+    "workbox-precaching": "^7.3.0",
+    "workbox-routing": "^7.3.0"
   }
 }
