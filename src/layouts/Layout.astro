@@ -1,8 +1,6 @@
 ---
-console.log();
 const multiAddrStrs = import.meta.env.MULTIADDR_STRINGS
 const remoteId = import.meta.env.REMOTE_ID
-console.log(JSON.stringify({remoteId: remoteId, multiAddrStrs: multiAddrStrs}))
 ---
 
 <!-- Entry Point of the Web App -->
@@ -24,12 +22,3 @@ console.log(JSON.stringify({remoteId: remoteId, multiAddrStrs: multiAddrStrs}))
 		<slot />
 	</body>
 </html>
-
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>

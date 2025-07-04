@@ -18,7 +18,6 @@ export class Settings {
     }
 
     public async init(remoteServer?: {remoteId: string, multiAddrStrs: string[]}) {
-      // console.log("Bootstrap Addr Env Settings: ", bootstrapAddrs);
       
       let db = await openDatabase(remoteServer)
       this.settings = await getAllSettings(db)

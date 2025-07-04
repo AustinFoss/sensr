@@ -13,7 +13,7 @@ import { LibP2pProvider } from '../scripts/protocol-eip1193';
 
 
 import { useStore } from '@nanostores/solid';
-import { $ensResAddr } from '../scripts/store';
+import { $ensResAddr, $remotePeerId } from '../scripts/store';
 
 // Make sure the Service Worker is running
 let serviceWorkerReg = await navigator.serviceWorker.ready
@@ -129,12 +129,12 @@ console.log("SW Init Success with PeerID: ", serviceWorkerId);
 webWorkerProvider.init([settings.getSetting('Networking').networks[0].providerInfo])
 let ethClient = new BrowserProvider(webWorkerProvider)
 
-let libp2pProvider: BrowserProvider = new BrowserProvider(new LibP2pProvider({
-    remote: multiaddr('/ip4/10.0.0.167/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g/p2p/12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8/p2p-circuit/webrtc/p2p/12D3KooWCNYZvrgCQdFFaSQYAHhnnM5rtBYVqbNh7vhqZ93Au4U8'),
-    // @ts-ignore TODO
-    node: node,
-    provider: ethClient
-}))
+// let libp2pProvider: BrowserProvider = new BrowserProvider(new LibP2pProvider({
+//     remote: multiaddr('/ip4/10.0.0.167/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g/p2p/12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8/p2p-circuit/webrtc/p2p/12D3KooWCNYZvrgCQdFFaSQYAHhnnM5rtBYVqbNh7vhqZ93Au4U8'),
+//     // @ts-ignore TODO
+//     node: node,
+//     provider: ethClient
+// }))
 
 setInterval(async () => {            
     try {        
@@ -154,6 +154,7 @@ setInterval(async () => {
 
 export default () => {
     const ensResAddr = useStore($ensResAddr)
+    const remotePeerId = useStore($remotePeerId)
 
     let sting: any[] = [];
 
@@ -189,8 +190,13 @@ export default () => {
             </div>
         </div>
 
+        <input id='ensQuery' type="text" placeholder='.eth?' onInput={(event) => {
+            const input = document.getElementById('ensQuery') as HTMLInputElement  
+            $ensResAddr.set(input.value)     
+        }} />
+
         <button onClick={async () => {
-            let resolver = await EnsResolver.fromName(ethClient, 'vitalik.eth')
+            let resolver = await EnsResolver.fromName(ethClient, ensResAddr())
             let addr = await resolver?.getAddress()
             console.log("ENS resolves to: ", addr);
             if(addr) {
@@ -198,6 +204,22 @@ export default () => {
             }
         }}>Local ENS Query?</button>
         <p>{getLocalResolved()}</p>
+
+        <input type="text" id='remotePeerId' placeholder='Peer ID: 12D3KooW...' onInput={() => {
+            const input = document.getElementById('remotePeerId') as HTMLInputElement
+            $remotePeerId.set(input.value)
+        }} />
+        <button onClick={async () => {
+            let libp2pProvider: BrowserProvider = new BrowserProvider(new LibP2pProvider({
+                remote: multiaddr('/ip4/10.0.0.167/udp/37485/webrtc-direct/certhash/uEiBR9NOgSney8KiC2iFsW4kS_B8QwteDjqiysVPsSnC03g/p2p/12D3KooWAjsZv92pw8meBSaV1sULiCSoWEruqb34gee5yDKE4wM8/p2p-circuit/webrtc/p2p/' + remotePeerId()),
+                // @ts-ignore TODO
+                node: node,
+                provider: ethClient
+            }))
+            let resolver = await EnsResolver.fromName(libp2pProvider, ensResAddr())
+            let _ensResAddr = await resolver?.getAddress()
+            console.log("Reote ENS Query Resolved to: ", _ensResAddr);            
+        }}>Remote ENS Query?</button>
 
         {/* <h3>Permit Connections From: </h3><input id='permitInput' type='text' onInput={() => {
             let ele = document.getElementById('permitInput') as HTMLInputElement
